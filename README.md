@@ -70,6 +70,12 @@ Each tool runs lightweight heuristic pre-screening on your input, then returns a
 
 ---
 
+## License
+
+Apache 2.0. See [LICENSE](LICENSE).
+
+---
+
 ## More
 
 Full control library, self-assessment wizard, and real-time regulatory alerts at [aigovernance.com](https://aigovernance.com).
