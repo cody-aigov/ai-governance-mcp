@@ -25,7 +25,7 @@ testpaths = ["tests"]
 
 [project.urls]
 Homepage = "https://aigovernance.com"
-Repository = "https://github.com/cody-aigov/ai-governance-controls"
+Repository = "https://github.com/cody-aigov/ai-governance-mcp"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ai_governance_controls"]
