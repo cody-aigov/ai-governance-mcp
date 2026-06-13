@@ -27,8 +27,8 @@ jobs:
       - name: Verify imports
         run: |
           python -c "
-          from ai_governance_controls.controls.saf_001 import ai_safety_screen
+          from ai_governance_controls.controls.saf_002 import ai_safety_screen
           from ai_governance_controls.controls.hoc_001 import ai_risk_classify
-          from ai_governance_controls.controls.saf_005 import ai_red_team
+          from ai_governance_controls.controls.sec_005 import ai_red_team
           print('All controls import OK')
           "
