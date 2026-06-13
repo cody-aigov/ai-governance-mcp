@@ -5,34 +5,78 @@ _HIGH_RISK_SECTORS = {
     "biometric": "biometric identification",
     "education": "education and vocational training",
     "employment": "employment and worker management",
+    "hiring": "employment and hiring decisions",
+    "recruiting": "employment and recruiting",
     "essential services": "access to essential services",
+    "benefits": "access to essential services / benefits",
+    "housing": "access to housing",
+    "welfare": "social welfare decisions",
     "law enforcement": "law enforcement",
+    "criminal": "criminal justice",
     "migration": "migration and border control",
     "justice": "administration of justice",
+    "judicial": "administration of justice",
+    "parole": "administration of justice",
     "critical infrastructure": "critical infrastructure management",
     "healthcare": "healthcare and medical",
+    "clinical": "healthcare and medical",
+    "diagnostic": "healthcare and medical diagnostics",
     "financial": "financial services and credit",
+    "credit": "financial services and credit",
+    "lending": "financial services and credit",
+    "underwriting": "financial services and underwriting",
     "insurance": "insurance underwriting",
+    "claims": "insurance claims adjudication",
+    "scoring": "consequential scoring system",
 }
 
 _AUTOMATION_TERMS = [
     "fully automated", "autonomous", "no human review", "without human",
     "automatically", "auto-approve", "auto-deny", "auto-generate",
+    # from HOC controls
+    "automated decision", "automated decisioning", "automated scoring",
+    "without oversight", "no oversight", "unsupervised",
+    "auto-accept", "auto-reject", "auto-triage",
 ]
 
 _OVERSIGHT_TERMS = [
     "human review", "human oversight", "human in the loop", "approval required",
     "reviewed by", "supervised", "audited", "monitored",
+    # HOC-002: approval gates
+    "human approval", "approval gate", "approval workflow", "review sla",
+    # HOC-003: review workflow vocabulary
+    "review workflow", "acceptance criteria", "escalation",
+    # HOC-004: automation bias detection
+    "override rate", "calibration",
+    # HOC-005: reviewer competency
+    "qualified reviewer", "competency", "certified",
+    # HOC-006: override logging
+    "override procedure", "reason code",
+    # general
+    "hitl", "human-in-the-loop",
 ]
 
 _GDPR_TERMS = [
     "eu", "european", "gdpr", "data subject", "right to erasure",
     "right to access", "controller", "processor",
+    # regulatory references cited across HOC controls
+    "eu ai act", "article 26", "nist ai rmf", "right to explanation",
+    "right to human review", "conformity assessment",
 ]
 
 _SCALE_TERMS = [
     "millions", "large-scale", "mass", "widespread", "population",
     "national", "global", "enterprise-wide",
+    # from HOC controls
+    "high-volume", "bulk", "batch", "at scale", "organization-wide",
+]
+
+# HOC-002: irreversible or high-stakes decisions that require an approval gate
+_CONSEQUENTIAL_TERMS = [
+    "irreversible", "consequential", "high-stakes", "high stakes",
+    "credit decision", "hiring decision", "termination", "denial",
+    "rejection", "foreclosure", "eviction", "suspension", "ban",
+    "eligibility", "disqualify", "blacklist",
 ]
 
 
@@ -55,6 +99,13 @@ def _classify_signals(text: str) -> tuple[list[str], list[str]]:
         risk_signals.append("OVERSIGHT GAP: automated decision-making without explicit human oversight")
     elif oversight:
         risk_signals.append(f"OVERSIGHT: human oversight mechanisms mentioned ({', '.join(oversight[:2])})")
+
+    consequential = [w for w in _CONSEQUENTIAL_TERMS if w in t]
+    if consequential:
+        risk_signals.append(f"CONSEQUENTIAL: irreversible or high-stakes decisions detected ({', '.join(consequential[:3])})")
+        reg_signals.append("EU AI Act Art. 26 (human oversight for high-risk systems)")
+        if not oversight:
+            risk_signals.append("APPROVAL GATE GAP: consequential decisions without documented human approval gate (HOC-002)")
 
     gdpr = [w for w in _GDPR_TERMS if w in t]
     if gdpr:
