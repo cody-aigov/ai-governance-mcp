@@ -17,6 +17,12 @@ dependencies = [
 [project.scripts]
 ai-governance-controls = "ai_governance_controls.server:main"
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [project.urls]
 Homepage = "https://aigovernance.com"
 Repository = "https://github.com/cody-aigov/ai-governance-controls"

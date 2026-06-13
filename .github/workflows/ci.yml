@@ -22,13 +22,7 @@ jobs:
         uses: astral-sh/setup-uv@v4
 
       - name: Install package
-        run: uv pip install -e . --system
+        run: uv pip install -e ".[dev]" --system
 
-      - name: Verify imports
-        run: |
-          python -c "
-          from ai_governance_controls.controls.saf_002 import ai_safety_screen
-          from ai_governance_controls.controls.hoc_001 import ai_risk_classify
-          from ai_governance_controls.controls.sec_005 import ai_red_team
-          print('All controls import OK')
-          "
+      - name: Run tests
+        run: pytest
