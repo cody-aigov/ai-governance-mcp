@@ -11,9 +11,11 @@ _FINANCIAL_TERMS = [
     "funds", "balance", "credit", "debit", "invoice", "charge", "refund",
 ]
 _PII_TERMS = [
-    "personal data", "customer data", "user data", "account information",
-    "social security", "date of birth", "home address", "phone number",
-    "credit card", "bank account", "passport", "driver's license",
+    "pii", "personal data", "personally identifiable", "customer data",
+    "user data", "account information", "social security", "date of birth",
+    "home address", "phone number", "credit card", "bank account",
+    "passport", "driver's license", "student data", "student pii",
+    "teacher data", "employee data", "patient data",
 ]
 _HEALTH_TERMS = [
     "medical", "health", "diagnosis", "treatment", "prescription",
