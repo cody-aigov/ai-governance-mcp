@@ -5,10 +5,15 @@ _ACTUATOR_TERMS = [
     "execute", "send", "delete", "modify", "update", "create", "initiate",
     "trigger", "deploy", "transfer", "purchase", "order", "book", "schedule",
     "cancel", "submit", "write", "post", "publish",
+    # destructive database operations (SAF-002 output validation example)
+    "drop", "truncate", "alter",
+    # agentic / automation patterns
+    "invoke", "auto-approve", "auto-execute", "autonomously",
 ]
 _FINANCIAL_TERMS = [
     "transfer", "payment", "withdraw", "deposit", "transaction", "wire",
     "funds", "balance", "credit", "debit", "invoice", "charge", "refund",
+    "billing", "subscription", "budget", "expense", "payroll", "revenue", "pricing",
 ]
 _PII_TERMS = [
     "pii", "personal data", "personally identifiable", "customer data",
@@ -16,14 +21,31 @@ _PII_TERMS = [
     "home address", "phone number", "credit card", "bank account",
     "passport", "driver's license", "student data", "student pii",
     "teacher data", "employee data", "patient data",
+    "biometric", "location data", "ip address", "email address",
+    "salary", "hr data", "ssn", "national id", "genetic data",
 ]
 _HEALTH_TERMS = [
     "medical", "health", "diagnosis", "treatment", "prescription",
     "patient", "clinical", "therapeutic", "symptom", "drug",
+    "dosage", "medication", "mental health", "psychiatric",
+    "genomic", "genetic", "hospital", "dental",
 ]
 _AUTH_TERMS = [
     "verify", "authenticate", "authorize", "approve", "confirm",
     "2fa", "mfa", "multi-factor", "permission", "consent",
+    "role", "access control", "privilege", "admin", "api key",
+    "credential", "token", "oauth", "jwt", "sso",
+]
+# SAF-005: Harmful Content Filtering
+_CONTENT_TERMS = [
+    "harmful", "toxic", "offensive", "illegal", "violence", "hate",
+    "explicit", "adult content", "prohibited", "abuse", "discriminatory",
+    "profanity", "safe for work",
+]
+# agentic AI patterns — applies_to_agents: True across all SAF controls
+_AGENTIC_TERMS = [
+    "agent", "autonomous", "multi-agent", "orchestrat", "subagent",
+    "pipeline", "workflow", "computer use", "tool use",
 ]
 
 
@@ -47,9 +69,17 @@ def _detect_signals(text: str) -> list[str]:
     if health:
         signals.append(f"HEALTH: healthcare context detected ({', '.join(health[:3])})")
 
+    content = [w for w in _CONTENT_TERMS if w in t]
+    if content:
+        signals.append(f"CONTENT RISK: potentially harmful content domain ({', '.join(content[:3])})")
+
+    agentic = [w for w in _AGENTIC_TERMS if w in t]
+    if agentic:
+        signals.append(f"AGENTIC: autonomous or multi-step execution patterns ({', '.join(agentic[:3])})")
+
     auth = [w for w in _AUTH_TERMS if w in t]
-    if actuators and not auth:
-        signals.append("AUTH GAP: actuator capabilities present but no explicit authorization step found")
+    if (actuators or agentic) and not auth:
+        signals.append("AUTH GAP: actuator or agentic capabilities present but no explicit authorization step found")
 
     return signals or ["no high-risk signals detected in automated pre-screening"]
 
