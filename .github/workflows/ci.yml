@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install package
+        run: uv pip install -e . --system
+
+      - name: Verify imports
+        run: |
+          python -c "
+          from ai_governance_controls.controls.saf_001 import ai_safety_screen
+          from ai_governance_controls.controls.hoc_001 import ai_risk_classify
+          from ai_governance_controls.controls.saf_005 import ai_red_team
+          print('All controls import OK')
+          "
