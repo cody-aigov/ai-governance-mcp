@@ -1,4 +1,4 @@
-"""SAF-001: AI Safety Screening"""
+"""SAF-002: AI Output Validation"""
 
 
 _ACTUATOR_TERMS = [
@@ -56,7 +56,7 @@ def ai_safety_screen(system_prompt: str, context: str = "") -> str:
     """
     Screen an AI system's configuration for safety risks (SAF-001).
 
-    Evaluates a system prompt against the SAF-001 safety screening control.
+    Evaluates a system prompt against the SAF-002 output validation control.
     Returns a structured analysis framework for the host to complete.
 
     Args:
@@ -67,7 +67,7 @@ def ai_safety_screen(system_prompt: str, context: str = "") -> str:
     signal_block = "\n".join(f"  - {s}" for s in signals)
     context_block = f"\nDeployment context: {context}" if context else ""
 
-    return f"""SAFETY SCREENING ANALYSIS (SAF-001)
+    return f"""SAFETY SCREENING ANALYSIS (SAF-002)
 {"=" * 60}
 {context_block}
 System prompt:
@@ -110,7 +110,7 @@ Recommendations:
 - [actionable change to the system prompt or deployment]
 - [...]
 
-Applicable controls: [list relevant SAF-* control IDs from aigovernance.com/controls]
+Applicable controls: [list relevant control IDs from aigovernance.com/controls]
 
 Produce the safety screening report for the system prompt above.
 """

@@ -1,4 +1,4 @@
-"""SAF-005: AI Red Team"""
+"""SEC-005: Adversarial Robustness Testing"""
 
 
 _ROLE_TERMS = ["you are", "act as", "pretend", "roleplay", "persona", "character"]
@@ -87,7 +87,7 @@ def _build_category_guidance(profile: dict) -> str:
 
 def ai_red_team(system_prompt: str, num_test_cases: int = 10) -> str:
     """
-    Generate adversarial test cases for an AI system prompt (SAF-005).
+    Generate adversarial test cases for an AI system prompt (SEC-005).
 
     Produces a red team runbook: specific adversarial inputs tailored to the
     system prompt, organized by attack category. Returns a structured framework
@@ -111,7 +111,7 @@ def ai_red_team(system_prompt: str, num_test_cases: int = 10) -> str:
 
     flag_block = "\n".join(f"  - {f}" for f in flags) if flags else "  - none"
 
-    return f"""RED TEAM RUNBOOK (SAF-005)
+    return f"""RED TEAM RUNBOOK (SEC-005)
 {"=" * 60}
 System prompt:
 {system_prompt}
