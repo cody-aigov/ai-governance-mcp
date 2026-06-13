@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-governance-controls"
+version = "0.1.0"
+description = "Automatable AI governance controls as MCP tools"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["ai", "governance", "compliance", "mcp", "security"]
+dependencies = [
+    "mcp[cli]>=1.0.0",
+]
+
+[project.scripts]
+ai-governance-controls = "ai_governance_controls.server:main"
+
+[project.urls]
+Homepage = "https://aigovernance.com"
+Repository = "https://github.com/cody-aigov/ai-governance-controls"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_governance_controls"]
