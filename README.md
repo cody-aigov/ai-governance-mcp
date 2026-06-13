@@ -12,9 +12,9 @@ Built on the control library from [AI Governance Institute](https://aigovernance
 
 | Tool | Control | What it does |
 |---|---|---|
-| `ai_safety_screen` | SAF-001 | Screen a system prompt for safety risks: capability scope, authorization gaps, data exposure |
-| `ai_risk_classify` | HOC-001 | Classify an AI deployment's risk tier against EU AI Act and NIST AI RMF |
-| `ai_red_team` | SAF-005 | Generate a red team runbook of adversarial test cases for a system prompt |
+| `ai_safety_screen` | [SAF-001](https://aigovernance.com/controls/SAF-001) | Screen a system prompt for safety risks: capability scope, authorization gaps, data exposure |
+| `ai_risk_classify` | [HOC-001](https://aigovernance.com/controls/HOC-001) | Classify an AI deployment's risk tier against EU AI Act and NIST AI RMF |
+| `ai_red_team` | [SAF-005](https://aigovernance.com/controls/SAF-005) | Generate a red team runbook of adversarial test cases for a system prompt |
 
 ---
 
