@@ -163,6 +163,12 @@ def ai_red_team(system_prompt: str, num_test_cases: int = 10) -> str:
         system_prompt: The system prompt to red team.
         num_test_cases: Number of test cases to generate (default 10, max 30).
     """
+    if not isinstance(system_prompt, str) or not system_prompt.strip():
+        raise ValueError("INSUFFICIENT_EVIDENCE: system_prompt is required")
+    if not isinstance(num_test_cases, int) or isinstance(num_test_cases, bool):
+        raise ValueError("INVALID_INPUT: num_test_cases must be an integer")
+    if len(system_prompt) > 100_000:
+        raise ValueError("LIMIT_EXCEEDED: system_prompt exceeds 100000 characters")
     num_test_cases = min(max(num_test_cases, 3), 30)
     profile = _profile_system(system_prompt)
     category_guidance = _build_category_guidance(profile)

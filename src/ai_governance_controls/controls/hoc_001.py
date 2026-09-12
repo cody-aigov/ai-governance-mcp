@@ -1,5 +1,7 @@
 """HOC-001: AI Risk Classification"""
 
+import re
+
 
 _HIGH_RISK_SECTORS = {
     "biometric": "biometric identification",
@@ -57,7 +59,7 @@ _OVERSIGHT_TERMS = [
 ]
 
 _GDPR_TERMS = [
-    "eu", "european", "gdpr", "data subject", "right to erasure",
+    "european", "gdpr", "data subject", "right to erasure",
     "right to access", "controller", "processor",
     # regulatory references cited across HOC controls
     "eu ai act", "article 26", "nist ai rmf", "right to explanation",
@@ -85,33 +87,33 @@ def _classify_signals(text: str) -> tuple[list[str], list[str]]:
     risk_signals = []
     reg_signals = []
 
-    matched_sectors = [label for term, label in _HIGH_RISK_SECTORS.items() if term in t]
+    matched_sectors = [label for term, label in _HIGH_RISK_SECTORS.items() if re.search(rf"(?<![a-z]){re.escape(term)}(?![a-z])", t)]
     if matched_sectors:
         risk_signals.append(f"HIGH-RISK SECTOR: {', '.join(matched_sectors)}")
         reg_signals.append("EU AI Act (Annex III high-risk classification likely)")
 
-    automation = [w for w in _AUTOMATION_TERMS if w in t]
+    automation = [w for w in _AUTOMATION_TERMS if re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", t)]
     if automation:
         risk_signals.append(f"AUTOMATION: high automation level detected ({', '.join(automation[:2])})")
 
-    oversight = [w for w in _OVERSIGHT_TERMS if w in t]
+    oversight = [w for w in _OVERSIGHT_TERMS if re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", t) and not re.search(rf"(?:no|without|never|not)\s+(?:\w+\s+){{0,2}}{re.escape(w)}", t)]
     if not oversight and automation:
         risk_signals.append("OVERSIGHT GAP: automated decision-making without explicit human oversight")
     elif oversight:
         risk_signals.append(f"OVERSIGHT: human oversight mechanisms mentioned ({', '.join(oversight[:2])})")
 
-    consequential = [w for w in _CONSEQUENTIAL_TERMS if w in t]
+    consequential = [w for w in _CONSEQUENTIAL_TERMS if re.search(rf"(?<![a-z]){re.escape(w)}s?(?![a-z])", t)]
     if consequential:
         risk_signals.append(f"CONSEQUENTIAL: irreversible or high-stakes decisions detected ({', '.join(consequential[:3])})")
         reg_signals.append("EU AI Act Art. 26 (human oversight for high-risk systems)")
         if not oversight:
             risk_signals.append("APPROVAL GATE GAP: consequential decisions without documented human approval gate (HOC-002)")
 
-    gdpr = [w for w in _GDPR_TERMS if w in t]
+    gdpr = [w for w in _GDPR_TERMS if re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", t)]
     if gdpr:
         reg_signals.append("EU AI Act, GDPR")
 
-    scale = [w for w in _SCALE_TERMS if w in t]
+    scale = [w for w in _SCALE_TERMS if re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", t)]
     if scale:
         risk_signals.append(f"SCALE: large-scale deployment indicated ({', '.join(scale[:2])})")
         reg_signals.append("NIST AI RMF (Govern 1.1: organizational risk tolerance)")
@@ -138,6 +140,12 @@ def ai_risk_classify(deployment_description: str) -> str:
             Include: what the system does, who uses it, what decisions it influences,
             what data it processes, and any human oversight in place.
     """
+    if not isinstance(deployment_description, str):
+        raise ValueError("INVALID_INPUT: deployment_description must be text")
+    if not deployment_description.strip():
+        return "RISK CLASSIFICATION ANALYSIS (HOC-001)\nCompletion: needs_input\nProvide the system purpose, affected people, data, geography, deployment stage, consequence and oversight mechanism."
+    if len(deployment_description) > 100_000:
+        raise ValueError("LIMIT_EXCEEDED: deployment_description exceeds 100000 characters")
     risk_signals, reg_signals = _classify_signals(deployment_description)
     risk_block = "\n".join(f"  - {s}" for s in risk_signals)
     reg_block = ", ".join(reg_signals)

@@ -15,6 +15,9 @@ Built on the control library from [AI Governance Institute](https://aigovernance
 | `ai_safety_screen` | [SAF-002](https://aigovernance.com/controls/ai-output-validation) | Screen a system prompt for safety risks: capability scope, authorization gaps, data exposure |
 | `ai_risk_classify` | [HOC-001](https://aigovernance.com/controls/ai-system-risk-classification) | Classify an AI deployment's risk tier against EU AI Act and NIST AI RMF |
 | `ai_red_team` | [SEC-005](https://aigovernance.com/controls/adversarial-robustness-testing) | Generate a red team runbook of adversarial test cases for a system prompt |
+| `governance_search` / `governance_get` | Release A content pack | Search or retrieve versioned controls and kit criteria |
+| `ai_control_review` | Release A evidence review | Check supplied artifacts against a selected control pack |
+| `ai_evidence_validate` / `ai_report_export` | Release A evidence contract | Validate and export review bundles as JSON, Markdown, or CSV |
 
 ---
 
@@ -59,7 +62,7 @@ Once installed, call the tools directly in conversation.
 
 ## How it works
 
-Each tool runs lightweight heuristic pre-screening on your input, then returns an expert evaluation framework to your host LLM. The host LLM completes the analysis using the framework and produces a structured report. No additional API keys required.
+The legacy tools run lightweight heuristic pre-screening and return a bounded evaluation framework to the host LLM. Release A tools perform deterministic checks against a pinned offline content pack and preserve evidence references through validation and export. Supplied commands are never executed, and no tool certifies compliance or claims test execution without imported execution evidence. No additional API keys required.
 
 ---
 

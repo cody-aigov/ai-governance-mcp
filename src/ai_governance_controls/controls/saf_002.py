@@ -1,5 +1,7 @@
 """SAF-002: AI Output Validation"""
 
+import re
+
 
 _ACTUATOR_TERMS = [
     "execute", "send", "delete", "modify", "update", "create", "initiate",
@@ -53,7 +55,7 @@ def _detect_signals(text: str) -> list[str]:
     t = text.lower()
     signals = []
 
-    actuators = [w for w in _ACTUATOR_TERMS if w in t]
+    actuators = [w for w in _ACTUATOR_TERMS if re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", t) and not re.search(rf"(?:do not|don't|never|cannot)\s+(?:\w+\s+){{0,2}}{re.escape(w)}", t)]
     if actuators:
         signals.append(f"ACTUATOR: system can take real-world actions ({', '.join(actuators[:4])})")
 
@@ -86,7 +88,7 @@ def _detect_signals(text: str) -> list[str]:
 
 def ai_safety_screen(system_prompt: str, context: str = "") -> str:
     """
-    Screen an AI system's configuration for safety risks (SAF-001).
+    Screen an AI system's configuration for output-validation safety risks (SAF-002).
 
     Evaluates a system prompt against the SAF-002 output validation control.
     Returns a structured analysis framework for the host to complete.
@@ -95,6 +97,12 @@ def ai_safety_screen(system_prompt: str, context: str = "") -> str:
         system_prompt: The system prompt or configuration to screen.
         context: Optional deployment context (e.g. "customer-facing chatbot for a bank").
     """
+    if not isinstance(system_prompt, str) or not isinstance(context, str):
+        raise ValueError("INVALID_INPUT: system_prompt and context must be text")
+    if not system_prompt.strip():
+        return "SAFETY SCREENING ANALYSIS (SAF-002)\nCompletion: needs_input\nProvide a system prompt or configuration to review."
+    if len(system_prompt) + len(context) > 100_000:
+        raise ValueError("LIMIT_EXCEEDED: input exceeds 100000 characters")
     signals = _detect_signals(system_prompt + " " + context)
     signal_block = "\n".join(f"  - {s}" for s in signals)
     context_block = f"\nDeployment context: {context}" if context else ""
