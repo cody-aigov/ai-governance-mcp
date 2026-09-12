@@ -21,6 +21,10 @@ Built on the control library from [AI Governance Institute](https://aigovernance
 | `ai_mcp_review` | MCP deployment review | Reviews a JSON MCP client configuration and a previously captured `tools/list` manifest against an approved baseline. Reports new tools, removed tools, capability changes, mixed write/untrusted-content surfaces, and missing identity evidence. |
 | `ai_evidence_validate` | Evidence bundle validation | Checks report structure, control IDs, finding statuses, and evidence-reference links. |
 | `ai_report_export` | Evidence bundle export | Exports a validated review as JSON, Markdown, or CSV while retaining stable finding and evidence-reference IDs. |
+| `ai_risk_classify_v2` | Structured risk intake | Collects deployment facts, separates internal risk from jurisdiction applicability, and abstains when required facts are missing. |
+| `ai_output_validate` | Output validation | Validates actual supplied output samples against required fields, types, and patterns. |
+| `ai_red_team_v2` | Repeatable red-team planning | Creates stable, versioned test cases with explicit pass criteria. Plans are marked `not_run` until a runner supplies results. |
+| `ai_eval_review` | Evaluation result review | Imports test outcomes, reports coverage and inconclusive cases, and detects regressions against a prior equivalent run. |
 
 The governance library is bundled with the package so the same package version uses the same control wording and evidence requirements on every run. `governance_search` and `governance_get` are the way to inspect that library; you do not need to load the entire catalog into your prompt.
 
@@ -114,6 +118,8 @@ Once installed, call the tools directly in conversation.
 The prompt, risk, and red-team tools perform lightweight deterministic pre-screening and return a bounded framework for the host assistant to complete. The governance and MCP review tools perform deterministic checks against the bundled offline library and return structured findings. Evidence references record the artifact, hash, source, capture time, locator, and whether the basis was supplied, observed, or inferred.
 
 These tools assist a governance review; they do not certify an organization, determine legal applicability conclusively, prove runtime enforcement, or execute a red-team plan. A generated test plan has status `not_run` until execution results are supplied by a separate runner. Missing facts and missing evidence are returned explicitly so a reviewer can decide what to collect next. No additional API key is required, and the server performs no automatic telemetry or remote inference.
+
+The structured risk tool treats the EU AI Act and NIST AI RMF differently: EU results are potential applicability records that require legal review, while NIST is reported as voluntary framework guidance. The output validator checks the samples you provide; it does not generate samples or decide whether an output is substantively correct. Evaluation review distinguishes `pass`, `fail`, and `inconclusive`, and a model judge alone is not proof that a real-world side effect occurred.
 
 ---
 

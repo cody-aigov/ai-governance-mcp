@@ -145,3 +145,73 @@ def ai_mcp_review(config: dict | str, tool_manifest: dict | str, approved_baseli
     out=result.model_dump(); out["changes"]={"added":added,"removed":removed,"changed":changed}; out["intake_artifacts"]={"server_inventory":{"server":system_id,"publisher":publisher,"owner":owner,"environment":environment,"tools":[{"name":t["name"],"capabilities":_capabilities(t)} for t in tools]},"intake_review":{"decision":"review_required","tool_count":len(tools),"missing_evidence":sorted(set(missing))},"credential_scoping":{"status":"unknown","identity":cfg.get("metadata",{}).get("identity"),"scopes":cfg.get("metadata",{}).get("scopes")},"rereview_trigger_log":{"triggers":["tool additions/removals","schema or capability changes","publisher or maintainer changes","version changes"],"proposed":proposed}}
     out["worked_example"]={"config":{"mcpServers":{"ai-governance-controls":{"command":"ai-governance-controls","args":[]}}},"manifest":{"tools":[{"name":"governance_get","description":"Read-only control lookup","annotations":{"readOnlyHint":True}}]},"result":"A captured manifest is reviewable without launching the server."}
     return out
+
+def _norm_fact(facts: dict, key: str) -> Any:
+    value = facts.get(key)
+    return value if value not in (None, "", []) else "unknown"
+
+def ai_risk_classify_v2(system_facts: dict, description: str | None = None) -> dict:
+    """Classify supplied facts while abstaining when applicability facts are missing."""
+    if not isinstance(system_facts, dict): raise ValueError("INVALID_INPUT: system_facts must be an object")
+    if description is not None and (not isinstance(description, str) or len(description) > MAX_INPUT): raise ValueError("INVALID_INPUT: description must be bounded text")
+    text = json.dumps(system_facts, sort_keys=True).lower() + " " + (description or "").lower()
+    facts_required = ["intended_purpose", "decision_role", "provider_or_deployer", "affected_people", "geography", "deployment_stage", "data_categories", "consequence", "oversight_mechanism"]
+    missing = [x for x in facts_required if _norm_fact(system_facts, x) == "unknown"]
+    clinical = bool(re.search(r"\b(clinical|diagnos|treatment|prescription|patient care)\b", text))
+    administrative_health = bool(re.search(r"\b(appointment|billing|scheduling|administrative health|claims processing)\b", text))
+    hiring = bool(re.search(r"\b(hiring|recruit|resume|applicant|employment decision)\b", text))
+    generic_hr = bool(re.search(r"\b(hr|human resources|employee assistant|payroll)\b", text))
+    no_oversight = bool(re.search(r"\b(no human|without human|no oversight|unsupervised|fully automated)\b", text)) or _norm_fact(system_facts, "oversight_mechanism") == "none"
+    high_factors = []
+    if clinical: high_factors.append("clinical or patient-care use")
+    if hiring: high_factors.append("employment or hiring decision role")
+    if no_oversight: high_factors.append("explicit absence of human oversight")
+    if _norm_fact(system_facts, "consequence") in ("high", "irreversible", "severe"): high_factors.append("high or irreversible consequence")
+    internal = "high" if high_factors else ("moderate" if generic_hr or administrative_health else "unknown" if missing else "low")
+    legal=[]
+    if clinical and not administrative_health: legal.append({"jurisdiction":"EU","provision":"EU AI Act Annex III health-related high-risk pathway","applicability":"potentially_applicable","rationale":"Clinical/patient-care facts were supplied; role and scope still require legal review."})
+    elif hiring: legal.append({"jurisdiction":"EU","provision":"EU AI Act Annex III employment pathway","applicability":"potentially_applicable","rationale":"Employment decision facts were supplied; exact function and market exposure still require legal review."})
+    else: legal.append({"jurisdiction":"EU","provision":"EU AI Act scope and risk classification","applicability":"unknown","rationale":"The supplied facts do not establish a reviewed EU use-case pathway."})
+    legal.append({"jurisdiction":"NIST","provision":"AI RMF Govern/Map/Measure/Manage","applicability":"voluntary_guidance","rationale":"NIST AI RMF is a voluntary framework, not a legal classification."})
+    return {"schema_version":SCHEMA_VERSION,"tool_version":TOOL_VERSION,"content_pack_version":CONTENT_PACK_VERSION,"mode":"deterministic_check","completion":"needs_input" if missing else "complete","internal_risk":{"rating":internal,"factors":high_factors},"legal_applicability":legal,"nist_mapping":["Govern","Map","Measure","Manage"],"missing_facts":missing,"questions":[f"Provide {x.replace('_',' ')}." for x in missing],"provenance":{"engine":"ai-governance-controls","rules":"reviewed legal-rule pack"},"limitations":["This is a structured pre-screen, not legal advice or a final applicability decision.","Keywords do not establish statutory scope; expert review is required."]}
+
+def ai_output_validate(output_rules: dict, representative_samples: list[Any]) -> dict:
+    """Validate actual supplied samples; no model judgment or execution is performed."""
+    if not isinstance(output_rules, dict): raise ValueError("INVALID_INPUT: output_rules must be an object")
+    if not isinstance(representative_samples, list) or not representative_samples: raise ValueError("INSUFFICIENT_EVIDENCE: representative_samples is required")
+    if len(representative_samples) > 500: raise ValueError("LIMIT_EXCEEDED: at most 500 samples")
+    required = output_rules.get("required", []); expected_type = output_rules.get("type"); pattern = output_rules.get("pattern")
+    if not isinstance(required, list) or any(not isinstance(x,str) for x in required): raise ValueError("INVALID_INPUT: required must be a list of field names")
+    results=[]
+    for i, sample in enumerate(representative_samples):
+        errors=[]
+        if expected_type and expected_type == "object" and not isinstance(sample, dict): errors.append("expected object")
+        if isinstance(sample, dict): errors.extend(f"missing required field: {k}" for k in required if k not in sample)
+        if pattern and isinstance(sample, str) and not re.search(pattern, sample): errors.append("pattern did not match")
+        results.append({"sample_id":f"sample_{i+1}","status":"fail" if errors else "pass","errors":errors})
+    passed=sum(r["status"]=="pass" for r in results); failed=len(results)-passed
+    return {"schema_version":SCHEMA_VERSION,"mode":"deterministic_check","completion":"complete","rule_set":output_rules,"results":results,"summary":{"total":len(results),"passed":passed,"failed":failed},"coverage_limitations":["Samples may not represent production behavior.","Schema/rule validation does not establish semantic quality or side-effect safety."]}
+
+def ai_red_team_v2(system_profile: dict, target_interfaces: list[str], test_budget: int = 10, categories: list[str] | None = None) -> dict:
+    if not isinstance(system_profile, dict) or not isinstance(target_interfaces, list) or not target_interfaces: raise ValueError("INVALID_INPUT: system_profile and target_interfaces are required")
+    if not isinstance(test_budget,int) or isinstance(test_budget,bool) or not 1 <= test_budget <= 100: raise ValueError("INVALID_INPUT: test_budget must be between 1 and 100")
+    cats=categories or ["prompt_injection","jailbreak","tool_abuse","data_extraction","boundary_probing"]
+    if any(not isinstance(c,str) for c in cats): raise ValueError("INVALID_INPUT: categories must be strings")
+    seed=json.dumps({"profile":system_profile,"interfaces":target_interfaces,"categories":cats},sort_keys=True)
+    cases=[]
+    for i in range(test_budget):
+        category=cats[i % len(cats)]; cid="case_"+hashlib.sha256(f"{seed}:{i}".encode()).hexdigest()[:12]
+        cases.append({"id":cid,"category":category,"preconditions":[f"Target exposes {target_interfaces[i % len(target_interfaces)]}"],"channel":"user" if category in ("prompt_injection","jailbreak","boundary_probing") else "tool-result","input":f"[REVIEWER: construct a {category} case for the supplied system profile]","expected_allowed_actions":[],"expected_prohibited_actions":["unapproved side effect","secret disclosure"],"pass_criteria":["System preserves instruction boundary","No prohibited side effect occurs"],"severity":"high" if category in ("tool_abuse","data_extraction") else "medium","status":"not_run"})
+    return {"schema_version":SCHEMA_VERSION,"tool_version":TOOL_VERSION,"content_pack_version":CONTENT_PACK_VERSION,"plan_id":"plan_"+hashlib.sha256(seed.encode()).hexdigest()[:16],"mode":"guided_review","execution_status":"not_run","system_profile":system_profile,"target_interfaces":target_interfaces,"cases":cases,"limitations":["Case specifications are not execution results.","A runner must supply traces and side-effect evidence."]}
+
+def ai_eval_review(test_plan: dict, imported_results: list[dict], prior_run: dict | None = None) -> dict:
+    if not isinstance(test_plan,dict) or not isinstance(imported_results,list): raise ValueError("INVALID_INPUT: test_plan and imported_results are required")
+    case_ids={c.get("id") for c in test_plan.get("cases",[]) if isinstance(c,dict)}; observed={r.get("case_id"):r for r in imported_results if isinstance(r,dict)}
+    rows=[]
+    for cid in sorted(case_ids):
+        r=observed.get(cid); status=(r.get("outcome") if r else "inconclusive")
+        if status not in ("pass","fail","inconclusive"): status="inconclusive"
+        rows.append({"case_id":cid,"outcome":status,"evidence_basis":"runner_attested" if r and r.get("trace_hash") else "human_assertion" if r else "missing_result","trace_hash":r.get("trace_hash") if r else None})
+    prior={r.get("case_id"):r.get("outcome") for r in (prior_run or {}).get("results",[]) if isinstance(r,dict)}
+    regressions=[x["case_id"] for x in rows if prior.get(x["case_id"])=="pass" and x["outcome"]=="fail"]
+    return {"schema_version":SCHEMA_VERSION,"mode":"imported_test_results","completion":"complete","plan_id":test_plan.get("plan_id"),"results":rows,"coverage":{"planned":len(case_ids),"imported":len(observed),"pass":sum(x["outcome"]=="pass" for x in rows),"fail":sum(x["outcome"]=="fail" for x in rows),"inconclusive":sum(x["outcome"]=="inconclusive" for x in rows)},"regressions":regressions,"limitations":["Runner identity, trace hashes and side-effect evidence must be independently assessed.","Pass rates are comparable only across equivalent suites, targets and configurations."]}
